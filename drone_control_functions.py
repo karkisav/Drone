@@ -11,30 +11,13 @@ COMMAND_RESEND_INTERVAL = 0.5 # seconds - how often to resend velocity/yaw rate 
 
 # Type mask for velocity control (ignoring position, acceleration, and yaw/yaw_rate)
 # These are the correct constant names in pymavlink
-VELOCITY_CONTROL_MASK = (
-    mavutil.mavlink.POSITION_TARGET_TYPEMASK_X_IGNORE |
-    mavutil.mavlink.POSITION_TARGET_TYPEMASK_Y_IGNORE |
-    mavutil.mavlink.POSITION_TARGET_TYPEMASK_Z_IGNORE |
-    mavutil.mavlink.POSITION_TARGET_TYPEMASK_AX_IGNORE |
-    mavutil.mavlink.POSITION_TARGET_TYPEMASK_AY_IGNORE |
-    mavutil.mavlink.POSITION_TARGET_TYPEMASK_AZ_IGNORE |
-    mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_IGNORE |
-    mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE
-)
+# type_mask = (
+#     mavutil.mavlink.POSITION_TARGET_TYPEMASK_VELOCITY_IGNORE |
+#     mavutil.mavlink.POSITION_TARGET_TYPEMASK_ACCELERATION_IGNORE |
+#     mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_IGNORE |
+#     mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE
+# )
 
-# Type mask for yaw rate control (ignoring position, velocity, and acceleration)
-YAW_RATE_CONTROL_MASK = (
-    mavutil.mavlink.POSITION_TARGET_TYPEMASK_X_IGNORE |
-    mavutil.mavlink.POSITION_TARGET_TYPEMASK_Y_IGNORE |
-    mavutil.mavlink.POSITION_TARGET_TYPEMASK_Z_IGNORE |
-    mavutil.mavlink.POSITION_TARGET_TYPEMASK_VX_IGNORE |
-    mavutil.mavlink.POSITION_TARGET_TYPEMASK_VY_IGNORE |
-    mavutil.mavlink.POSITION_TARGET_TYPEMASK_VZ_IGNORE |
-    mavutil.mavlink.POSITION_TARGET_TYPEMASK_AX_IGNORE |
-    mavutil.mavlink.POSITION_TARGET_TYPEMASK_AY_IGNORE |
-    mavutil.mavlink.POSITION_TARGET_TYPEMASK_AZ_IGNORE |
-    mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_IGNORE # We are controlling yaw_rate, so yaw is ignored
-)
 
 # Global master connection object (will be initialized in main)
 master = None
@@ -66,7 +49,23 @@ def arm_vehicle():
     print('Vehicle Armed!')
     time.sleep(3) # Short pause after arming
 
-def takeoff(altitude):
+def set_speed(speed=0.25):
+    """
+    Sets the horizontal speed of the drone
+    """
+    master.mav.command_long_send(
+        master.target_system,             # Target system ID
+        master.target_component,          # Target component ID
+        mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,  # Command ID
+        0,                                # Confirmation
+        1,                                # param1: Speed type (1 for ground speed)
+        speed,                             # param2: Speed in m/s
+        -1,                               # param3: Throttle (-1 indicates no change)
+        0, 0, 0, 0                        # param4 ~ param7: Unused
+    )
+    time.sleep(1)
+
+def takeoff(altitude=2):
     """Commands the drone to take off to a specified altitude."""
     print(f"Taking Off to {altitude} meters...")
     master.mav.command_long_send(master.target_system, master.target_component,
@@ -77,88 +76,41 @@ def takeoff(altitude):
     print(f"Waiting for takeoff to complete (approx. {altitude * 3} seconds)...") # Rough estimate
     time.sleep(altitude * 3) # Simple heuristic for takeoff time
 
-def move_body_ned(vx, vy, vz, duration):
-    """
-    Commands the drone to move with specified velocities in its body frame.
-    Continuously sends the command to prevent timeout.
-    vx: forward/backward velocity (m/s)
-    vy: right/left velocity (m/s)
-    vz: down/up velocity (m/s) (positive is down)
-    duration: how long to apply the velocity (seconds)
-    """
-    print(f"Moving at vx={vx:.2f}, vy={vy:.2f}, vz={vz:.2f} m/s for {duration:.2f} seconds...")
-    start_time = time.time()
-    while time.time() - start_time < duration:
-        master.mav.set_position_target_local_ned_send(
-            0, # time_boot_ms (not used)
-            master.target_system, master.target_component,
-            mavutil.mavlink.MAV_FRAME_BODY_NED, # Frame: Relative to the drone's body
-            VELOCITY_CONTROL_MASK,
-            0, 0, 0, # x, y, z position (ignored by mask)
-            vx, vy, vz, # vx, vy, vz velocity
-            0, 0, 0, # afx, afy, afz acceleration (ignored by mask)
-            0, 0 # yaw, yaw_rate (ignored by mask)
-        )
-        time.sleep(COMMAND_RESEND_INTERVAL)
-
-    # Stop movement after duration
-    print("Stopping movement...")
+def move_body_ned(distance_x, speed_mps=0.25):
+        # Send the position target command
+    print("//// Moving ////")
     master.mav.set_position_target_local_ned_send(
-        0, master.target_system, master.target_component,
-        mavutil.mavlink.MAV_FRAME_BODY_NED,
-        VELOCITY_CONTROL_MASK,
-        0, 0, 0, # Position (ignored)
-        0, 0, 0, # vx, vy, vz velocity (zero to stop)
-        0, 0, 0, # Acceleration (ignored)
-        0, 0 # Yaw, Yaw Rate (ignored)
+        0,  # time_boot_ms (not used)
+        master.target_system,
+        master.target_component,
+        mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED,  # Relative to current position and heading
+        int(0b110111111000),                        # int to ignore velocity, yaw, and accel
+        distance_x, 0, 0,  # x, y, z positions (forward, right, down)
+        0, 0, 0,                # vx, vy, vz velocities (ignored)
+        0, 0, 0,                # afx, afy, afz accelerations (ignored)
+        0, 0                    # yaw, yaw_rate (ignored)
     )
-    time.sleep(0.5) # Short pause to ensure stop command is processed
+    time.sleep(distance_x * 1/speed_mps + 2)
+    print(f"moved: {distance_x}")
 
-def rotate_yaw(target_angle_degrees, yaw_rate_degrees_per_sec=10):
+def rotate_yaw(angle_degrees, speed_deg_per_sec=10, clockwise=True):
     """
-    Rotates the drone by a specified angle at a given yaw rate.
-    Continuously sends the command to prevent timeout.
-    target_angle_degrees: The total angle to rotate (e.g., 90 for 90 degrees clockwise).
-    yaw_rate_degrees_per_sec: How fast to rotate in degrees per second.
+    Rotate drone yaw by specified angle at given speed.
+    
+    Args:
+        angle_degrees: Angle to rotate (e.g., 90)
+        speed_deg_per_sec: Rotation speed in degrees per second
+        clockwise: True for clockwise, False for counter-clockwise
     """
-    target_angle_radians = math.radians(target_angle_degrees)
-    yaw_rate_radians_per_sec = math.radians(yaw_rate_degrees_per_sec)
-
-    if yaw_rate_radians_per_sec == 0:
-        print("Yaw rate is zero, no rotation will occur.")
-        return
-
-    duration = abs(target_angle_radians / yaw_rate_radians_per_sec)
-    actual_yaw_rate = yaw_rate_radians_per_sec if target_angle_degrees >= 0 else -yaw_rate_radians_per_sec
-
-    print(f"Rotating {target_angle_degrees} degrees at {yaw_rate_degrees_per_sec} deg/s for {duration:.2f} seconds...")
-
-    start_time = time.time()
-    while time.time() - start_time < duration:
-        master.mav.set_position_target_local_ned_send(
-            0, # time_boot_ms (not used)
-            master.target_system, master.target_component,
-            mavutil.mavlink.MAV_FRAME_BODY_NED, # Frame: Relative to the drone's body
-            YAW_RATE_CONTROL_MASK,
-            0, 0, 0, # x, y, z position (ignored)
-            0, 0, 0, # vx, vy, vz velocity (ignored)
-            0, 0, 0, # afx, afy, afz acceleration (ignored)
-            0, actual_yaw_rate # yaw (ignored), yaw_rate (controlled)
-        )
-        time.sleep(COMMAND_RESEND_INTERVAL)
-
-    # Stop rotation
-    print("Stopping rotation...")
-    master.mav.set_position_target_local_ned_send(
-        0, master.target_system, master.target_component,
-        mavutil.mavlink.MAV_FRAME_BODY_NED,
-        YAW_RATE_CONTROL_MASK,
-        0, 0, 0, # Position (ignored)
-        0, 0, 0, # vx, vy, vz velocity (ignored)
-        0, 0, 0, # Acceleration (ignored)
-        0, 0 # yaw (ignored), yaw_rate (zero to stop)
-    )
-    time.sleep(0.5) # Short pause to ensure stop command is processed
+    print("///// Rotating /////")
+    direction = 1 if clockwise else -1
+    
+    master.mav.command_long_send(master.target_system, master.target_component,
+                             mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+                             0, angle_degrees, speed_deg_per_sec, int(direction), 1, 0, 0, 0)
+    
+    time.sleep(angle_degrees/speed_deg_per_sec + 2)
+    print(f"Rotated {angle_degrees}")
 
 def land_vehicle():
     """Commands the drone to land."""
@@ -177,9 +129,27 @@ if __name__ == "__main__":
         takeoff(altitude=1)
         set_mode('GUIDED')
 
+        time.sleep(0.3)
+
+        set_speed(0.25)
         # Example: Move forward 1m and rotate 90 deg
-        move_body_ned(0.25, 0, 0, 24) # 1m at 0.25m/s
-        rotate_yaw(90, 15) # Rotate 90 degrees at 15 deg/s
+        time.sleep(0.3)
+
+        # move_body_ned(3) #moving straight x degrees, 3 here
+        # rotate_yaw(90, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
+
+        # move_body_ned(3) #moving straight x degrees, 3 here
+        # rotate_yaw(90, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
+
+        # move_body_ned(3) #moving straight x degrees, 3 here
+        # rotate_yaw(90, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
+
+        # move_body_ned(3) #moving straight x degrees, 3 here
+        # rotate_yaw(90, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
+
+        for _ in range(4):
+            move_body_ned(3) #moving straight x degrees, 3 here
+            rotate_yaw(90, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
 
         land_vehicle()
 

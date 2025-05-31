@@ -31,10 +31,36 @@ master.mav.command_long_send(master.target_system, master.target_component,
                              mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
                              0, 0, 0, 0, 0, 0, 0, 1)
 
-time.sleep(36)
+time.sleep(4)
+
+mode = 'GUIDED'
+mode_id = master.mode_mapping()[mode]
+master.set_mode(mode_id)
+time.sleep(1)
+
+print("Rotating")
+master.mav.command_long_send(master.target_system, master.target_component,
+                             mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+                             0, 90, 10, -1, 1, 0, 0, 0)
+
+# master.mav.command_long_send(
+#     master.target_system,             # Target system ID
+#     master.target_component,          # Target component ID
+#     mavutil.mavlink.MAV_CMD_CONDITION_YAW,  # Command ID
+#     0,                                # Confirmation
+#     90,                               # param1: Yaw angle in degrees (positive for clockwise)
+#     15,                               # param2: Yaw speed in deg/s
+#     1,                                # param3: Direction (-1: CCW, 1: CW)
+#     1,                                # param4: Relative (1) or absolute (0) angle
+#     0, 0, 0                           # param5 ~ param7: Unused
+# )
+
+
+time.sleep(25)
 
 
 mode = 'LAND'
+print("Mode chaned to: LAND")
 
 # Check if mode is available
 if mode not in master.mode_mapping():
@@ -42,6 +68,7 @@ if mode not in master.mode_mapping():
     print('Try:', list(master.mode_mapping().keys()))
     sys.exit(1)
 
+print("Landing")
 # Get mode ID
 mode_id = master.mode_mapping()[mode]
 # Set new mode
