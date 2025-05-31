@@ -29,7 +29,7 @@ time.sleep(2)
 print("Taking-Off ...")
 master.mav.command_long_send(master.target_system, master.target_component,
                              mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
-                             0, 0, 0, 0, 0, 0, 0, 3)
+                             0, 0, 0, 0, 0, 0, 0, 1)
 
 time.sleep(36)
 
@@ -54,3 +54,4 @@ master.mav.set_mode_send(
     master.target_system,
     mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
     mode_id)
+
