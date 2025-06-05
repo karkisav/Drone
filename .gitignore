@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Mavproxy
+mav.param
+mav.log
+
 # C extensions
 *.so
 

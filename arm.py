@@ -36,27 +36,27 @@ time.sleep(4)
 mode = 'GUIDED'
 mode_id = master.mode_mapping()[mode]
 master.set_mode(mode_id)
-time.sleep(1)
+time.sleep(2)
 
 print("Rotating")
 master.mav.command_long_send(master.target_system, master.target_component,
                              mavutil.mavlink.MAV_CMD_CONDITION_YAW,
                              0, 90, 10, -1, 1, 0, 0, 0)
 
-# master.mav.command_long_send(
-#     master.target_system,             # Target system ID
-#     master.target_component,          # Target component ID
-#     mavutil.mavlink.MAV_CMD_CONDITION_YAW,  # Command ID
-#     0,                                # Confirmation
-#     90,                               # param1: Yaw angle in degrees (positive for clockwise)
-#     15,                               # param2: Yaw speed in deg/s
-#     1,                                # param3: Direction (-1: CCW, 1: CW)
-#     1,                                # param4: Relative (1) or absolute (0) angle
-#     0, 0, 0                           # param5 ~ param7: Unused
-# )
+master.mav.command_long_send(
+    master.target_system,             # Target system ID
+    master.target_component,          # Target component ID
+    mavutil.mavlink.MAV_CMD_CONDITION_YAW,  # Command ID
+    0,                                # Confirmation
+    90,                               # param1: Yaw angle in degrees (positive for clockwise)
+    15,                               # param2: Yaw speed in deg/s
+    1,                                # param3: Direction (-1: CCW, 1: CW)
+    1,                                # param4: Relative (1) or absolute (0) angle
+    0, 0, 0                           # param5 ~ param7: Unused
+)
 
 
-time.sleep(25)
+time.sleep(15)
 
 
 mode = 'LAND'

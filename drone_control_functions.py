@@ -7,7 +7,6 @@ import math # For math.radians or math.pi
 # --- Global Constants and Connection Setup ---
 CONNECTION_STRING = 'udpin:127.0.0.1:14550'
 BAUD_RATE = 57600
-COMMAND_RESEND_INTERVAL = 0.5 # seconds - how often to resend velocity/yaw rate commands
 
 # Type mask for velocity control (ignoring position, acceleration, and yaw/yaw_rate)
 # These are the correct constant names in pymavlink
@@ -65,7 +64,7 @@ def set_speed(speed=0.25):
     )
     time.sleep(1)
 
-def takeoff(altitude=2):
+def takeoff(altitude=1):
     """Commands the drone to take off to a specified altitude."""
     print(f"Taking Off to {altitude} meters...")
     master.mav.command_long_send(master.target_system, master.target_component,
@@ -76,7 +75,7 @@ def takeoff(altitude=2):
     print(f"Waiting for takeoff to complete (approx. {altitude * 3} seconds)...") # Rough estimate
     time.sleep(altitude * 3) # Simple heuristic for takeoff time
 
-def move_body_ned(distance_x, speed_mps=0.25):
+def move_body_ned(distance_x, speed_mps=1):
         # Send the position target command
     print("//// Moving ////")
     master.mav.set_position_target_local_ned_send(
@@ -131,25 +130,25 @@ if __name__ == "__main__":
 
         time.sleep(0.3)
 
-        set_speed(0.25)
+        set_speed(0.50)
         # Example: Move forward 1m and rotate 90 deg
         time.sleep(0.3)
 
-        # move_body_ned(3) #moving straight x degrees, 3 here
-        # rotate_yaw(90, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
+        move_body_ned(3) #moving straight x degrees, 3 here
+        rotate_yaw(90, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
 
-        # move_body_ned(3) #moving straight x degrees, 3 here
-        # rotate_yaw(90, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
+        move_body_ned(3) #moving straight x degrees, 3 here
+        rotate_yaw(90, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
 
-        # move_body_ned(3) #moving straight x degrees, 3 here
-        # rotate_yaw(90, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
+        move_body_ned(3) #moving straight x degrees, 3 here
+        rotate_yaw(90, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
 
-        # move_body_ned(3) #moving straight x degrees, 3 here
-        # rotate_yaw(90, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
+        move_body_ned(3) #moving straight x degrees, 3 here
+        rotate_yaw(90, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
 
-        for _ in range(4):
-            move_body_ned(3) #moving straight x degrees, 3 here
-            rotate_yaw(90, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
+        # for _ in range(4):
+        #     move_body_ned(3) #moving straight x degrees, 3 here
+        #     rotate_yaw(90, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
 
         land_vehicle()
 
