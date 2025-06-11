@@ -57,9 +57,9 @@ def set_speed(speed=0.25):
         master.target_component,          # Target component ID
         mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,  # Command ID
         0,                                # Confirmation
-        1,                                # param1: Speed type (1 for ground speed)
-        speed,                             # param2: Speed in m/s
-        -1,                               # param3: Throttle (-1 indicates no change)
+        0,                                # param1: Speed type (1 for ground speed)
+        speed,                            # param2: Speed in m/s
+        0,                                # param3: Throttle (-1 indicates no change)
         0, 0, 0, 0                        # param4 ~ param7: Unused
     )
     time.sleep(1)
@@ -75,7 +75,7 @@ def takeoff(altitude=1):
     print(f"Waiting for takeoff to complete (approx. {altitude * 3} seconds)...") # Rough estimate
     time.sleep(altitude * 3) # Simple heuristic for takeoff time
 
-def move_body_ned(distance_x, speed_mps=1):
+def move_body_ned(distance_x, speed_mps=0.25):
         # Send the position target command
     print("//// Moving ////")
     master.mav.set_position_target_local_ned_send(
@@ -89,7 +89,7 @@ def move_body_ned(distance_x, speed_mps=1):
         0, 0, 0,                # afx, afy, afz accelerations (ignored)
         0, 0                    # yaw, yaw_rate (ignored)
     )
-    time.sleep(distance_x * 1/speed_mps + 2)
+    time.sleep(distance_x * 1/speed_mps + 1)
     print(f"moved: {distance_x}")
 
 def rotate_yaw(angle_degrees, speed_deg_per_sec=10, clockwise=True):
@@ -111,6 +111,14 @@ def rotate_yaw(angle_degrees, speed_deg_per_sec=10, clockwise=True):
     time.sleep(angle_degrees/speed_deg_per_sec + 2)
     print(f"Rotated {angle_degrees}")
 
+def disarm_vehicle():
+    """Disarms the drone."""
+    print("Disarming vehicle...")
+    master.arducopter_disarm()
+    master.motors_disarmed_wait()
+    print('Vehicle Disarmed!')
+    time.sleep(2) # Short pause after disarming
+
 def land_vehicle():
     """Commands the drone to land."""
     print("Switching to LAND mode and waiting for landing...")
@@ -128,26 +136,20 @@ if __name__ == "__main__":
         takeoff(altitude=1)
         set_mode('GUIDED')
 
-        time.sleep(0.3)
+        time.sleep(0.5)
 
-        set_speed(0.50)
+        set_speed(0.25)
         # Example: Move forward 1m and rotate 90 deg
-        time.sleep(0.3)
+        time.sleep(3)
 
-        move_body_ned(3) #moving straight x degrees, 3 here
-        rotate_yaw(90, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
+        move_body_ned(2.4) #moving straight x degrees, 3 here
+        # rotate_yaw(180, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
+        # rotate_yaw(180, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
 
-        move_body_ned(3) #moving straight x degrees, 3 here
-        rotate_yaw(90, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
-
-        move_body_ned(3) #moving straight x degrees, 3 here
-        rotate_yaw(90, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
-
-        move_body_ned(3) #moving straight x degrees, 3 here
-        rotate_yaw(90, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
+        # time.sleep(5)
 
         # for _ in range(4):
-        #     move_body_ned(3) #moving straight x degrees, 3 here
+        #     move_body_ned(2) #moving straight x degrees, 3 here
         #     rotate_yaw(90, 10, clockwise=False) # Rotate 90 degrees at 10 deg/s
 
         land_vehicle()

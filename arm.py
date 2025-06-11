@@ -31,32 +31,44 @@ master.mav.command_long_send(master.target_system, master.target_component,
                              mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
                              0, 0, 0, 0, 0, 0, 0, 1)
 
-time.sleep(4)
+time.sleep(5)
 
 mode = 'GUIDED'
 mode_id = master.mode_mapping()[mode]
 master.set_mode(mode_id)
-time.sleep(2)
+time.sleep(10)
 
-print("Rotating")
-master.mav.command_long_send(master.target_system, master.target_component,
-                             mavutil.mavlink.MAV_CMD_CONDITION_YAW,
-                             0, 90, 10, -1, 1, 0, 0, 0)
+# print("Rotating")
+# master.mav.command_long_send(master.target_system, master.target_component,
+#                              mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+#                              0, 90, 10, -1, 1, 0, 0, 0)
 
-master.mav.command_long_send(
-    master.target_system,             # Target system ID
-    master.target_component,          # Target component ID
-    mavutil.mavlink.MAV_CMD_CONDITION_YAW,  # Command ID
-    0,                                # Confirmation
-    90,                               # param1: Yaw angle in degrees (positive for clockwise)
-    15,                               # param2: Yaw speed in deg/s
-    1,                                # param3: Direction (-1: CCW, 1: CW)
-    1,                                # param4: Relative (1) or absolute (0) angle
-    0, 0, 0                           # param5 ~ param7: Unused
-)
+# master.mav.command_long_send(
+#     master.target_system,             # Target system ID
+#     master.target_component,          # Target component ID
+#     mavutil.mavlink.MAV_CMD_CONDITION_YAW,  # Command ID
+#     0,                                # Confirmation
+#     90,                               # param1: Yaw angle in degrees (positive for clockwise)
+#     15,                               # param2: Yaw speed in deg/s
+#     1,                                # param3: Direction (-1: CCW, 1: CW)
+#     1,                                # param4: Relative (1) or absolute (0) angle
+#     0, 0, 0                           # param5 ~ param7: Unused
+# )
+
+# master.mav.set_position_target_local_ned_send(
+#     0,  # time_boot_ms (not used)
+#     master.target_system,
+#     master.target_component,
+#     mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED,  # Relative to current position and heading
+#     int(0b110111111000),                        # int to ignore velocity, yaw, and accel
+#     3, 0, 0,  # x, y, z positions (forward, right, down)
+#     0, 0, 0,                # vx, vy, vz velocities (ignored)
+#     0, 0, 0,                # afx, afy, afz accelerations (ignored)
+#     0, 0                    # yaw, yaw_rate (ignored)
+# )
 
 
-time.sleep(15)
+# time.sleep(5)
 
 
 mode = 'LAND'
