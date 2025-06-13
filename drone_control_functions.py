@@ -75,6 +75,44 @@ def takeoff(altitude=1):
     print(f"Waiting for takeoff to complete (approx. {altitude * 3} seconds)...") # Rough estimate
     time.sleep(altitude * 3) # Simple heuristic for takeoff time
 
+def set_body_ned_velocity(vx, vy, vz, duration=0):
+    """
+    Send a velocity command to the vehicle in the body frame (forward, right, down).
+
+    Args:
+        vx (float): Forward velocity in m/s.
+        vy (float): Rightward velocity in m/s.
+        vz (float): Downward velocity in m/s.
+        duration (int): How long to maintain the velocity. 0 for indefinite.
+    """
+    # Type mask to command velocity and ignore position
+    # 0b0000111111000111 -> ignore pos, acc, yaw, yaw_rate
+    # We are commanding velocity components
+    type_mask = (
+        mavutil.mavlink.POSITION_TARGET_TYPEMASK_X_IGNORE |
+        mavutil.mavlink.POSITION_TARGET_TYPEMASK_Y_IGNORE |
+        mavutil.mavlink.POSITION_TARGET_TYPEMASK_Z_IGNORE |
+        mavutil.mavlink.POSITION_TARGET_TYPEMASK_AFX_IGNORE |
+        mavutil.mavlink.POSITION_TARGET_TYPEMASK_AFY_IGNORE |
+        mavutil.mavlink.POSITION_TARGET_TYPEMASK_AFZ_IGNORE |
+        mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_IGNORE |
+        mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE
+    )
+
+    master.mav.set_position_target_local_ned_send(
+        0,       # time_boot_ms (not used)
+        master.target_system,
+        master.target_component,
+        mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED, # Frame relative to drone's body
+        type_mask,
+        0, 0, 0, # x, y, z positions (ignored)
+        vx, vy, vz, # x, y, z velocity in m/s
+        0, 0, 0, # x, y, z acceleration (ignored)
+        0, 0     # yaw, yaw_rate (ignored)
+    )
+    if duration > 0:
+        time.sleep(duration)
+
 def move_body_ned(distance_x, speed_mps=0.25):
         # Send the position target command
     print("//// Moving ////")
