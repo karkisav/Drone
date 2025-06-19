@@ -11,7 +11,7 @@ import sys
 # Import the new, cleaner functions from our robust drone_control library.
 # Note that we removed functions we no longer need, like move_body_ned.
 try:
-    from drone_control import (
+    from drone_control_functions import (
         connect_to_vehicle,
         set_mode,
         arm_vehicle,
@@ -214,4 +214,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
